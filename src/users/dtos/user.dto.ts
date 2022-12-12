@@ -3,7 +3,7 @@ import { ObjectId } from 'mongoose';
 
 export class UserDto {
 	@Expose()
-	@Transform((params) => params.obj._id?.toString())
+	@Transform((params) => params.obj._id.toString())
 	_id: ObjectId;
 
 	@Expose()

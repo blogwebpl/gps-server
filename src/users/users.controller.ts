@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Get } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,5 +22,12 @@ export class UsersController {
 	@Get()
 	getAllUsers() {
 		return this.usersService.findAll();
+	}
+
+	@UseGuards(JwtAuthGuard)
+	@Delete(':userId')
+	@HttpCode(204)
+	delUser(@Param('userId') userId: string) {
+		return this.usersService.delete(userId);
 	}
 }

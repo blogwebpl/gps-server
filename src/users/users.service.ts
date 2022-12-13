@@ -2,7 +2,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { Model, isValidObjectId } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument } from './schemas/users.schema';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
 
@@ -10,7 +10,7 @@ import { HttpException } from '@nestjs/common/exceptions/http.exception';
 export class UsersService {
 	constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-	private checkId(id: string) {
+	private validateId(id: string) {
 		if (!isValidObjectId(id)) {
 			throw new HttpException('Invalid user id', 400);
 		}
@@ -26,12 +26,15 @@ export class UsersService {
 	}
 
 	async update(userId: string, changes: UpdateUserDto) {
-		this.checkId(userId);
-		return this.userModel.findByIdAndUpdate(userId, changes, { new: true });
+		this.validateId(userId);
+		const user = await this.userModel.findById(userId);
+		Object.assign(user, changes);
+		user.save();
+		return user;
 	}
 
 	async delete(userId: string) {
-		this.checkId(userId);
+		this.validateId(userId);
 		const user = await this.userModel.findByIdAndDelete(userId).exec();
 		if (!user) this.userNotFoundException();
 		return user;

@@ -1,13 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable } from '@nestjs/common';
-import { User } from 'src/users/schemas/users.schema';
+import { Injectable, Logger } from '@nestjs/common';
+import { User, UserDocument } from 'src/users/schemas/users.schema';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
+import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
+export interface Tokens {
+	accessToken: string;
+	refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
-	constructor(private usersService: UsersService, private jwtService: JwtService) {}
+	constructor(
+		private usersService: UsersService,
+		private jwtService: JwtService,
+		private config: ConfigService
+	) {}
 
 	async validateUser(email: string, password: string): Promise<User> {
 		const user = await this.usersService.findByEmail(email);
@@ -22,10 +33,41 @@ export class AuthService {
 		return null;
 	}
 
-	async login(user: any) {
-		const payload = { sub: user._id };
+	login(user: UserDocument) {
+		const userId = user._id;
+		return this.generateNewTokens(userId.toString());
+	}
+
+	async logout(userId: string) {
+		await this.usersService.update(userId, { refreshToken: null });
+	}
+
+	async updateDbRefreshToken(userId: string, refreshToken: string): Promise<void> {
+		const hash = await argon.hash(refreshToken);
+		await this.usersService.update(userId, { refreshToken: hash });
+	}
+
+	async getTokens(userId: string): Promise<Tokens> {
+		const payload = { sub: userId };
+		const [accessToken, refreshToken] = await Promise.all([
+			this.jwtService.signAsync(payload, {
+				secret: this.config.get<string>('ACCESS_TOKEN_SECRET'),
+				expiresIn: this.config.get<string>('ACCESS_TOKEN_EXPIRES_IN'),
+			}),
+			this.jwtService.signAsync(payload, {
+				secret: this.config.get<string>('REFRESH_TOKEN_SECRET'),
+				expiresIn: this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN'),
+			}),
+		]);
 		return {
-			access_token: this.jwtService.sign(payload),
+			accessToken,
+			refreshToken,
 		};
+	}
+
+	async generateNewTokens(userId: string) {
+		const tokens = await this.getTokens(userId);
+		await this.updateDbRefreshToken(userId, tokens.refreshToken);
+		return tokens;
 	}
 }

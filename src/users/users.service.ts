@@ -20,6 +20,10 @@ export class UsersService {
 		throw new HttpException('User not found', 404);
 	}
 
+	private userUnauthorizedException() {
+		throw new HttpException('User unauthorized', 401);
+	}
+
 	create(createUserDto: CreateUserDto): Promise<User> {
 		const user = new this.userModel(createUserDto);
 		return user.save();
@@ -43,6 +47,12 @@ export class UsersService {
 	async findByEmail(email: string) {
 		const user = await this.userModel.findOne({ email }).exec();
 		if (!user) this.userNotFoundException();
+		return user;
+	}
+
+	async findWithToken(userId: string) {
+		const user = await this.userModel.findOne({ _id: userId, refreshToken: { $ne: null } }).exec();
+		if (!user) this.userUnauthorizedException();
 		return user;
 	}
 

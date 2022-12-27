@@ -33,9 +33,13 @@ export class AuthService {
 		return null;
 	}
 
-	login(user: UserDocument) {
+	async login(user: UserDocument) {
 		const userId = user._id;
-		return this.generateNewTokens(userId.toString());
+		const tokens = await this.generateNewTokens(userId.toString());
+		return {
+			...tokens,
+			email: user.email,
+		};
 	}
 
 	async logout(userId: string) {

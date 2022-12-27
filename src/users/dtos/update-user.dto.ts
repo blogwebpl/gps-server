@@ -15,6 +15,10 @@ export class UpdateUserDto {
 	name?: string;
 
 	@IsString()
+	@ValidateIf((_object, value) => value !== undefined)
+	role?: string;
+
+	@IsString()
 	@IsOptional()
 	refreshToken?: string;
 }

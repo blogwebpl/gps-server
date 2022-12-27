@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RolesService } from '../roles/roles.service';
 
 export interface Tokens {
 	accessToken: string;
@@ -16,6 +17,7 @@ export interface Tokens {
 export class AuthService {
 	constructor(
 		private usersService: UsersService,
+		private rolesService: RolesService,
 		private jwtService: JwtService,
 		private config: ConfigService
 	) {}
@@ -50,6 +52,10 @@ export class AuthService {
 	async updateDbRefreshToken(userId: string, refreshToken: string): Promise<void> {
 		const hash = await argon.hash(refreshToken);
 		await this.usersService.update(userId, { refreshToken: hash });
+	}
+
+	getRoles(userId: string) {
+		return this.rolesService.getRolesByUser(userId);
 	}
 
 	async getTokens(userId: string): Promise<Tokens> {

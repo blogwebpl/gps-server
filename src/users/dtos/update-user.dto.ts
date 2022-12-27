@@ -1,4 +1,6 @@
-import { IsEmail, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { IsEmail, IsMongoId, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+
+import { ObjectId } from 'mongodb';
 
 export class UpdateUserDto {
 	@IsEmail()
@@ -16,7 +18,11 @@ export class UpdateUserDto {
 
 	@IsString()
 	@ValidateIf((_object, value) => value !== undefined)
-	role?: string;
+	role?: ObjectId;
+
+	@IsMongoId({ each: true })
+	// @Transform((params) => params.obj.roles.map((role: any) => role.toString()))
+	roles?: ObjectId[];
 
 	@IsString()
 	@IsOptional()

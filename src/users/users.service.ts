@@ -56,6 +56,11 @@ export class UsersService {
 		return user;
 	}
 
+	findById(userId: string) {
+		const user = this.userModel.findById(userId).exec();
+		return user;
+	}
+
 	findAll(): Promise<User[]> {
 		const users = this.userModel.find().exec();
 		return users;

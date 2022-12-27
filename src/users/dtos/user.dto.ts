@@ -15,4 +15,8 @@ export class UserDto {
 	@Expose()
 	@Transform((params) => params.obj.role.toString())
 	role: ObjectId;
+
+	@Expose()
+	@Transform((params) => params.obj.roles.map((role: ObjectId) => role.toString()))
+	roles: ObjectId[];
 }

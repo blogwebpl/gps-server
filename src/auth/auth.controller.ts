@@ -1,4 +1,6 @@
 import { Controller, Request, Post, UseGuards, Get, HttpCode } from '@nestjs/common';
+import { Serialize } from '../interceptors/serialize.interceptor';
+import { RoleDto } from '../roles/dto/role.dto';
 import { AuthService } from './auth.service';
 import { JwtAccessTokenGuard } from './jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './jwt-refresh-token.guard';
@@ -26,6 +28,13 @@ export class AuthController {
 	@Get('profile')
 	getProfile(@Request() req) {
 		return req.user;
+	}
+
+	@UseGuards(JwtAccessTokenGuard)
+	@Get('roles')
+	@Serialize(RoleDto)
+	getRoles(@Request() req) {
+		return this.authService.getRoles(req.user.id);
 	}
 
 	@UseGuards(JwtRefreshTokenGuard)

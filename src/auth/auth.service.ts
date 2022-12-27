@@ -39,6 +39,7 @@ export class AuthService {
 		return {
 			...tokens,
 			email: user.email,
+			role: user.role,
 		};
 	}
 

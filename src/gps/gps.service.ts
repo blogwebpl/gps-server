@@ -8,16 +8,16 @@ export class GpsService {
 
 	constructor() {
 		this.server = net.createServer((socket) => {
-			console.log('New client connected');
+			this.logger.log('New client connected');
 
 			// Odbieranie danych od klienta
 			socket.on('data', (data) => {
-				console.log(`Received data: ${data}`);
+				this.logger.log(`Received data: ${data}`);
 			});
 
 			// Zamykanie połączenia
 			socket.on('end', () => {
-				console.log('Client disconnected');
+				this.logger.log('Client disconnected');
 			});
 		});
 	}

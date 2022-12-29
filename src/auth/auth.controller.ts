@@ -1,14 +1,16 @@
-import { Controller, Request, Post, UseGuards, Get, HttpCode } from '@nestjs/common';
+import { Controller, Request, Post, UseGuards, Get, HttpCode, Patch, Body } from '@nestjs/common';
 import { Serialize } from '../interceptors/serialize.interceptor';
-import { RoleDto } from '../roles/dto/role.dto';
+import { RoleDto } from '../roles/dtos/role.dto';
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { UpdateUserRoleDto } from './dtos/update-user-role';
 import { JwtAccessTokenGuard } from './jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './jwt-refresh-token.guard';
 import { LocalAuthGuard } from './local-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-	constructor(private authService: AuthService) {}
+	constructor(private authService: AuthService, private usersService: UsersService) {}
 
 	@UseGuards(LocalAuthGuard)
 	@Post('login')
@@ -25,16 +27,16 @@ export class AuthController {
 	}
 
 	@UseGuards(JwtAccessTokenGuard)
-	@Get('profile')
-	getProfile(@Request() req) {
-		return req.user;
+	@Get('roles')
+	@Serialize(RoleDto)
+	getUserRoles(@Request() req) {
+		return this.authService.getUserRoles(req.user.id);
 	}
 
 	@UseGuards(JwtAccessTokenGuard)
-	@Get('roles')
-	@Serialize(RoleDto)
-	getRoles(@Request() req) {
-		return this.authService.getRoles(req.user.id);
+	@Patch()
+	setUserRole(@Request() req, @Body() changes: UpdateUserRoleDto) {
+		return this.usersService.update(req.user.id, changes);
 	}
 
 	@UseGuards(JwtRefreshTokenGuard)

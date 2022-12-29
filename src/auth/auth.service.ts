@@ -54,7 +54,7 @@ export class AuthService {
 		await this.usersService.update(userId, { refreshToken: hash });
 	}
 
-	getRoles(userId: string) {
+	getUserRoles(userId: string) {
 		return this.rolesService.getRolesByUser(userId);
 	}
 

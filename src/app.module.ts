@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { RolesModule } from './roles/roles.module';
+import { GpsService } from './gps/gps.service';
 
 @Module({
 	imports: [
@@ -28,5 +29,6 @@ import { RolesModule } from './roles/roles.module';
 		RolesModule,
 	],
 	controllers: [AppController],
+	providers: [GpsService],
 })
 export class AppModule {}

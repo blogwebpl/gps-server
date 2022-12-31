@@ -8,6 +8,7 @@ import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { RolesModule } from './roles/roles.module';
 import { GpsService } from './gps/gps.service';
+import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
 	imports: [
@@ -27,6 +28,7 @@ import { GpsService } from './gps/gps.service';
 		UsersModule,
 		AuthModule,
 		RolesModule,
+		GatewayModule,
 	],
 	controllers: [AppController],
 	providers: [GpsService],

@@ -7,8 +7,8 @@ import { AppController } from './app.controller';
 import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { RolesModule } from './roles/roles.module';
-import { GpsService } from './gps/gps.service';
 import { GatewayModule } from './gateway/gateway.module';
+import { GpsModule } from './gps/gps.module';
 
 @Module({
 	imports: [
@@ -29,8 +29,8 @@ import { GatewayModule } from './gateway/gateway.module';
 		AuthModule,
 		RolesModule,
 		GatewayModule,
+		GpsModule,
 	],
 	controllers: [AppController],
-	providers: [GpsService],
 })
 export class AppModule {}

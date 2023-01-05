@@ -9,6 +9,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { RolesModule } from './roles/roles.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { GpsModule } from './gps/gps.module';
+import { UsersDevicesModule } from './users-devices/users-devices.module';
 
 @Module({
 	imports: [
@@ -30,6 +31,7 @@ import { GpsModule } from './gps/gps.module';
 		RolesModule,
 		GatewayModule,
 		GpsModule,
+		UsersDevicesModule,
 	],
 	controllers: [AppController],
 })

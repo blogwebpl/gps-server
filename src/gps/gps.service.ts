@@ -1,3 +1,5 @@
+import { UsersDevicesService } from './../users-devices/users-devices.service';
+import { GatewayService } from './../gateway/gateway.service';
 import { Injectable, Logger } from '@nestjs/common';
 import * as net from 'net';
 import * as crc from 'crc';
@@ -14,6 +16,18 @@ interface FMSocket extends net.Socket {
 	imei: string;
 }
 
+interface Position {
+	vid: string;
+	io: [number, string | number][];
+	time: Date;
+	latitude: number;
+	longitude: number;
+	altitude: number;
+	angle: number;
+	sattelites: number;
+	speed: number;
+}
+
 @Injectable()
 export class GpsService {
 	private server: net.Server;
@@ -22,7 +36,9 @@ export class GpsService {
 	constructor(
 		@InjectModel(FMLast.name) private fmLastModel: Model<FMLastDocument>,
 		@InjectModel(FMData.name) private fmDataModel: Model<FMDataDocument>,
-		@InjectModel(Device.name) private deviceModel: Model<DeviceDocument>
+		@InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
+		private gatewayService: GatewayService,
+		private usersDevicesService: UsersDevicesService
 	) {
 		this.server = net.createServer();
 		this.server.on('connection', this.onSocketConnection);
@@ -139,7 +155,7 @@ export class GpsService {
 				});
 			}
 
-			this.emitPosition({
+			await this.emitPosition({
 				vid: socket.deviceId,
 				io,
 				time,
@@ -183,21 +199,38 @@ export class GpsService {
 		return savedCounter;
 	};
 
-	emitPosition({ vid, io, time, latitude, longitude, altitude, angle, sattelites, speed }) {
-		console.log({ vid, io, time, latitude, longitude, altitude, angle, sattelites, speed });
-		// clients.emitPosition({
-		// 	vid: socket.vehicleId,
-		// 	io,
-		// 	time,
-		// 	gps: {
-		// 		pos: [latitude, longitude],
-		// 		alt: altitude,
-		// 		ang: angle,
-		// 		sat: sattelites,
-		// 		spd: speed,
-		// 	},
-		// 	st: new Date(),
-		// });
+	async emitPosition(position: Position) {
+		console.log({
+			vid: position.vid,
+			io: position.io,
+			time: position.time,
+			latitude: position.latitude,
+			longitude: position.longitude,
+			altitude: position.altitude,
+			angle: position.angle,
+			sattelites: position.sattelites,
+			speed: position.speed,
+		});
+		const users = await this.usersDevicesService.getUsersWithVid(position.vid);
+		users.forEach((user) => {
+			this.sendDataToUser(user._id.toString(), position);
+		});
+	}
+
+	sendDataToUser(userId: string, position: Position) {
+		this.gatewayService.sendDataToUser(userId, 'point', {
+			vid: position.vid,
+			io: position.io,
+			time: position.time,
+			gps: {
+				pos: [position.latitude, position.longitude],
+				alt: position.altitude,
+				ang: position.angle,
+				sat: position.sattelites,
+				spd: position.speed,
+			},
+			st: new Date(),
+		});
 	}
 
 	async updateLastPosition({
@@ -294,8 +327,10 @@ export class GpsService {
 		const deviceDocument = await this.deviceModel.findOne({ imei }).exec();
 
 		if (deviceDocument === null) {
-			// TODO: config option 'saveNewIMEI ?'
-			return await this.addDeviceToDb(imei);
+			if (process.env.SAVE_NEW_IMEI === 'true') {
+				return await this.addDeviceToDb(imei);
+			}
+			return null;
 		}
 		if (!deviceDocument.allow) {
 			return null;
@@ -307,7 +342,7 @@ export class GpsService {
 	async addDeviceToDb(imei: string): Promise<string> {
 		const newDevice = new this.deviceModel({
 			imei,
-			allow: false,
+			allow: process.env.ALLOW_NEW_IMEI === 'true',
 			name: imei,
 			vehicleId: imei,
 		});

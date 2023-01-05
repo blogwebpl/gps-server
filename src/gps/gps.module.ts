@@ -1,3 +1,5 @@
+import { UsersDevicesModule } from './../users-devices/users-devices.module';
+import { GatewayService } from './../gateway/gateway.service';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FMData, FMDataSchema } from './schemas/fm-data.schema';
@@ -7,6 +9,7 @@ import { GpsService } from './gps.service';
 
 @Module({
 	imports: [
+		UsersDevicesModule,
 		MongooseModule.forFeature([
 			{
 				name: FMData.name,
@@ -22,7 +25,7 @@ import { GpsService } from './gps.service';
 			},
 		]),
 	],
-	providers: [GpsService],
+	providers: [GpsService, GatewayService],
 	exports: [GpsService],
 })
 export class GpsModule {}

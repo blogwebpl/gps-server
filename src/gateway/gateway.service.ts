@@ -38,8 +38,8 @@ export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect 
 		}
 	}
 
-	sendDataToClient(clientId: string, event: string, data: any) {
-		const connections = this.connections.filter((connection) => connection.userId === clientId);
+	sendDataToUser(userId: string, event: string, data: any) {
+		const connections = this.connections.filter((connection) => connection.userId === userId);
 		for (const connection of connections) {
 			connection.socket.emit(event, data);
 		}

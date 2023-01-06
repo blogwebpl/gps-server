@@ -53,14 +53,13 @@ export class GpsService {
 		this.logger.log('New client connected');
 
 		socket.on('data', async (data) => {
-			this.logger.log(`Received data: ${data.toString('hex')}`);
+			this.logger.log(`Received data (IMEI: ${socket.imei}): ${data.toString('hex')}`);
 			const result: boolean = await this.socketOnData(data, socket);
-			this.logger.log('rezultat zapisu danych');
-			this.logger.log(result);
+			this.logger.log(`Is data saved (IMEI: ${socket.imei}): ${result}`);
 		});
 
 		socket.on('end', () => {
-			this.logger.log('Client disconnected');
+			this.logger.log(`Client disconnected IMEI: ${socket.imei}`);
 		});
 	};
 
@@ -118,7 +117,7 @@ export class GpsService {
 				this.logger.log(recordsCount);
 			}
 		} catch (error) {
-			console.error(error);
+			this.logger.log(`${socket.imei} error: ${JSON.stringify(error)}`);
 			return false;
 		}
 		return true;
@@ -218,6 +217,7 @@ export class GpsService {
 	}
 
 	sendDataToUser(userId: string, position: Position) {
+		this.logger.log('Send data to user');
 		this.gatewayService.sendDataToUser(userId, 'point', {
 			vid: position.vid,
 			io: position.io,
@@ -244,6 +244,7 @@ export class GpsService {
 		sattelites,
 		speed,
 	}): Promise<boolean> {
+		this.logger.log('Update last position');
 		try {
 			const last = await this.fmLastModel.findOne({
 				vid,
@@ -291,6 +292,7 @@ export class GpsService {
 		sattelites,
 		speed,
 	}): Promise<boolean> {
+		this.logger.log('Save position');
 		try {
 			await this.fmDataModel.updateOne(
 				{
@@ -324,6 +326,7 @@ export class GpsService {
 	}
 
 	async getDeviceId(imei: string): Promise<string> {
+		this.logger.log('Get device ID');
 		const deviceDocument = await this.deviceModel.findOne({ imei }).exec();
 
 		if (deviceDocument === null) {
@@ -340,55 +343,66 @@ export class GpsService {
 	}
 
 	async addDeviceToDb(imei: string): Promise<string> {
+		this.logger.log('Add new device');
 		const newDevice = new this.deviceModel({
 			imei,
 			allow: process.env.ALLOW_NEW_IMEI === 'true',
 			name: imei,
 			vehicleId: imei,
 		});
-		console.log('dodaje nowe uzadzenie');
 		await newDevice.save();
-		return newDevice._id.toString();
+		return newDevice.imei;
 	}
 
 	parseIMEI(data: Buffer): string {
-		const frame = new Parser().uint16('length').string('imei', { length: 'length' });
-		const { imei }: { imei: string } = frame.parse(data);
-		return imei;
+		this.logger.log('Parse IMEI');
+		try {
+			const frame = new Parser().uint16('length').string('imei', { length: 'length' });
+			const { imei }: { imei: string } = frame.parse(data);
+			return imei;
+		} catch (error) {
+			this.logger.log(`error: ${JSON.stringify(error)}`);
+		}
 	}
 
 	sendSocketReplay(replay: string, socket: FMSocket) {
 		try {
 			const message = Buffer.from(replay, 'hex');
 			socket.write(message);
-		} catch (err) {
-			console.log(err);
+		} catch (error) {
+			this.logger.log(`${socket.imei} error: ${JSON.stringify(error)}`);
 		}
 	}
 	disconnectFromSocket(socket: FMSocket) {
 		this.sendSocketReplay('00', socket);
-		socket.end();
+		try {
+			socket.end();
+		} catch (_err) {}
 	}
 
 	isValidIMEI(imei: string) {
-		if (typeof imei !== 'string') {
+		try {
+			if (typeof imei !== 'string') {
+				return false;
+			}
+			const { length } = imei;
+			const parity = length % 2;
+			let sum = 0;
+			let position;
+			for (position = length - 1; position >= 0; position -= 1) {
+				let c = parseInt(imei.charAt(position), 10);
+				if (position % 2 === parity) {
+					c *= 2;
+				}
+				if (c > 9) {
+					c -= 9;
+				}
+				sum += c;
+			}
+			return sum % 10 === 0;
+		} catch (_err) {
 			return false;
 		}
-		const { length } = imei;
-		const parity = length % 2;
-		let sum = 0;
-		let position;
-		for (position = length - 1; position >= 0; position -= 1) {
-			let c = parseInt(imei.charAt(position), 10);
-			if (position % 2 === parity) {
-				c *= 2;
-			}
-			if (c > 9) {
-				c -= 9;
-			}
-			sum += c;
-		}
-		return sum % 10 === 0;
 	}
 
 	async asyncForEach(array: any, callback: any) {

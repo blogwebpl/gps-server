@@ -22,7 +22,7 @@ export interface IAvl {
 	nBytesEvents?: IEvent[];
 }
 
-const parser: any = new Parser()
+const parser: Parser = new Parser()
 	.uint32('zeroes')
 	.uint32('avlLength')
 	.uint8('codecId')

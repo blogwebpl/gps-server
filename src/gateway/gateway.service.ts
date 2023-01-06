@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import * as jwt from 'jsonwebtoken';
 import { isValidObjectId } from 'mongoose';
@@ -13,6 +13,7 @@ interface Connection {
 @Injectable()
 export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect {
 	private connections: Connection[] = [];
+	private logger = new Logger(GatewayService.name);
 
 	handleConnection(client: Socket) {
 		try {
@@ -39,9 +40,13 @@ export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect 
 	}
 
 	sendDataToUser(userId: string, event: string, data: any) {
-		const connections = this.connections.filter((connection) => connection.userId === userId);
-		for (const connection of connections) {
-			connection.socket.emit(event, data);
+		try {
+			const connections = this.connections.filter((connection) => connection.userId === userId);
+			for (const connection of connections) {
+				connection.socket.emit(event, data);
+			}
+		} catch (_err) {
+			this.logger.log('Send data to user error');
 		}
 	}
 }

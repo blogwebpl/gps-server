@@ -9,7 +9,9 @@ export class UsersDevicesService {
 		@InjectModel(UsersDevice.name) private usersDeviceModel: Model<UsersDevicesDocument>
 	) {}
 
-	async getUsersWithVid(vid: string) {
-		return await this.usersDeviceModel.find({ vid }).select('user').exec();
+	async getUsersIdWithVid(vid: string) {
+		const usersDevices = await this.usersDeviceModel.find({ vid }).lean().exec();
+		const users = usersDevices.map((ud) => ud.user.toString());
+		return users;
 	}
 }

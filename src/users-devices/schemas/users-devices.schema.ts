@@ -4,7 +4,7 @@ import { User } from '../../users/schemas/users.schema';
 
 export type UsersDevicesDocument = HydratedDocument<UsersDevice>;
 
-@Schema()
+@Schema({ collection: 'usersDevices' })
 export class UsersDevice {
 	@Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Users' })
 	user: User;

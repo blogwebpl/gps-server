@@ -70,11 +70,14 @@ export class GpsService {
 			return this.parseFrame(data, socket);
 		}
 
+		this.logger.log(`data length = ${data.length}`);
 		const imei = this.parseIMEI(data);
 		if (!this.isValidIMEI(imei)) {
 			this.disconnectFromSocket(socket);
 			return false;
 		}
+
+		this.logger.log('IMEI is valid');
 
 		const deviceId = await this.getDeviceId(imei);
 		if (!deviceId) {
@@ -201,23 +204,16 @@ export class GpsService {
 	async emitPosition(position: Position) {
 		console.log({
 			vid: position.vid,
-			io: position.io,
 			time: position.time,
-			latitude: position.latitude,
-			longitude: position.longitude,
-			altitude: position.altitude,
-			angle: position.angle,
-			sattelites: position.sattelites,
-			speed: position.speed,
 		});
-		const users = await this.usersDevicesService.getUsersWithVid(position.vid);
-		users.forEach((user) => {
-			this.sendDataToUser(user._id.toString(), position);
+		const users = await this.usersDevicesService.getUsersIdWithVid(position.vid);
+		users.forEach((user: string) => {
+			this.logger.log(`Emit data to user: ${user}`);
+			this.sendDataToUser(user, position);
 		});
 	}
 
 	sendDataToUser(userId: string, position: Position) {
-		this.logger.log('Send data to user');
 		this.gatewayService.sendDataToUser(userId, 'point', {
 			vid: position.vid,
 			io: position.io,

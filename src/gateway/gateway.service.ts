@@ -9,7 +9,7 @@ interface Connection {
 	socket: Socket;
 }
 
-@WebSocketGateway()
+@WebSocketGateway({ cors: true })
 @Injectable()
 export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect {
 	private connections: Connection[] = [];
@@ -17,6 +17,7 @@ export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect 
 
 	handleConnection(client: Socket) {
 		try {
+			this.logger.log('handleConnection');
 			const token = client.handshake.headers.authorization.split(' ')[1];
 			const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 			const userId = decoded.sub;
@@ -26,8 +27,9 @@ export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect 
 			}
 			this.connections.push({ userId: userId.toString(), socket: client });
 			client.emit('userId', userId);
+			this.logger.log(`WebSocket connected ${client.id}`);
 		} catch (error) {
-			console.log(error);
+			this.logger.log(error);
 			client.disconnect();
 		}
 	}
@@ -37,9 +39,11 @@ export class GatewayService implements OnGatewayConnection, OnGatewayDisconnect 
 		if (index !== -1) {
 			this.connections.splice(index, 1);
 		}
+		this.logger.log(`Socket disconnected ${client.id}`);
 	}
 
 	sendDataToUser(userId: string, event: string, data: any) {
+		this.logger.log('Send data to user');
 		try {
 			const connections = this.connections.filter((connection) => connection.userId === userId);
 			for (const connection of connections) {
